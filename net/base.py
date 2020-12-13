@@ -14,7 +14,7 @@ class ConvNet(nn.Module):
 		self.mlp = nn.Sequential(
 			nn.Linear(1600, 800),
 			nn.ReLU(True),
-			nn.Linear(800, 1600)
+			nn.Linear(800, 400)
 		)
 
 	def forward(self, input):
@@ -57,12 +57,12 @@ class Loss(nn.Module):
 		for index, query in enumerate(queries):
 			query = query.view(1, -1)
 			dist = -torch.cdist(supports, query, p=2).view(1, -1)
-			dist = F.softmax(dist, 0)
+	
 			label = index // 15
-			label = torch.LongTensor([label])
+			label = torch.LongTensor([label]).cuda()
 			total_loss += self.ce(dist, label)
 
-		return total_loss
+		return total_loss / queries.size(0)
 
 
 def get_model(way, shot, query):
