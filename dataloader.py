@@ -13,12 +13,10 @@ import csv
 import random
 import numpy as np
 import pandas as pd
-
 from PIL import Image
 from collections import defaultdict
 from itertools import combinations
 import matplotlib.pyplot as plt
-
 # fix random seeds for reproducibility
 SEED = 123
 torch.manual_seed(SEED)
@@ -27,12 +25,11 @@ torch.backends.cudnn.benchmark = False
 random.seed(SEED)
 np.random.seed(SEED)
 filenameToPILImage = lambda x: Image.open(x)
+
 class MetaDataset(Dataset):
 	def __init__(self, data_dir, csv_path, way, shot, query, val=1):
 		self.data_dir = data_dir
-		self.way = way
-		self.shot = shot
-		self.query = query
+		self.way, self.shot, self.query = way, shot, query
 		self.val = val
 		train_data = pd.read_csv(csv_path)
 		self.train_image_names = train_data['filename'].values.flatten()
@@ -50,12 +47,12 @@ class MetaDataset(Dataset):
 		return int(len(self.train_image_names) / self.val)
 	def __getitem__(self, index):
 		classes = np.random.choice(self.labels_list, self.way, replace=False)
-		datas, support = [], []
-		for index, clss in enumerate(classes):
-			select = np.random.choice(self.train_cls_datas[clss], self.shot+self.query)
-			datas.extend(select[:self.shot])
-			support.extend(select[self.shot:])
-		datas = torch.stack([self.transform(os.path.join(self.data_dir, name)) for name in datas], 0)
+		support, query = [], []
+		for clss in classes:
+			select = np.random.choice(self.train_cls_datas[clss], self.shot+self.query, replace=False)
+			support.extend(select[:self.shot])
+			query.extend(select[self.shot:])
 		support = torch.stack([self.transform(os.path.join(self.data_dir, name)) for name in support], 0)
-		return datas, support 
+		query = torch.stack([self.transform(os.path.join(self.data_dir, name)) for name in query], 0)
+		return support, query 
 
